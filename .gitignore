@@ -3,9 +3,6 @@
 venv/
 env/
 
-# База данных SQLite
-db.sqlite3
-
 # Временные файлы Python
 __pycache__/
 *.pyc
@@ -15,3 +12,5 @@ __pycache__/
 .vscode/
 # Мои личные файлы
 about.txt
+# Секретные ключи
+.env
