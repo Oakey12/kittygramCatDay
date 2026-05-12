@@ -30,7 +30,6 @@ class CatViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(cat)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    # --- ВОТ ЭТИ МЕТОДЫ ДОЛЖНЫ БЫТЬ ВНУТРИ КЛАССА ---
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def vote(self, request, pk=None):
         cat = self.get_object()
@@ -50,6 +49,19 @@ class CatViewSet(viewsets.ModelViewSet):
         top_data = DailyCatTop.objects.filter(date__gte=last_week).order_by('-score')[:10]
         serializer = DailyTopSerializer(top_data, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def vote(self, request, pk=None):
+        """Метод для голосования за кота."""
+        cat = self.get_object()
+        today = timezone.now().date()
+
+        if cat.owner == request.user:
+            return Response({"detail": "За своего кота голосовать нельзя!"}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+        Vote.objects.create(user=request.user, cat=cat)
+        self.update_daily_score(cat.id)
+        return Response({"detail": "Голос учтен!"}, status=status.HTTP_201_CREATED)
 
     def update_daily_score(self, cat_id):
         today = timezone.now().date()

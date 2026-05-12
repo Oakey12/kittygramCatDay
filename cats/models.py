@@ -47,8 +47,8 @@ class Vote(models.Model):
     date = models.DateField(auto_now_add=True)
 
     class Meta:
-        # Один пользователь — один голос за конкретного кота в день
         unique_together = ('user', 'cat', 'date')
+    
 
 class DailyCatTop(models.Model):
     date = models.DateField(unique=True, default=timezone.now)
