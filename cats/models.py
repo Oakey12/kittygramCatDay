@@ -1,6 +1,8 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.utils import timezone
+
+User = get_user_model()
 
 class Breed(models.Model):
     name = models.CharField(max_length=100, verbose_name='Название породы')
@@ -38,3 +40,21 @@ class CatOfTheDay(models.Model):
 
     def __str__(self):
         return f"Кот дня на {self.date}: {self.cat.name}"
+
+class Vote(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='votes')
+    cat = models.ForeignKey('Cat', on_delete=models.CASCADE, related_name='votes')
+    date = models.DateField(auto_now_add=True)
+
+    class Meta:
+        # Один пользователь — один голос за конкретного кота в день
+        unique_together = ('user', 'cat', 'date')
+
+class DailyCatTop(models.Model):
+    date = models.DateField(unique=True, default=timezone.now)
+    cat = models.ForeignKey('Cat', on_delete=models.CASCADE)
+    score = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'Дневной топ'
+        ordering = ['-date', '-score']

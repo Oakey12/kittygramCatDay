@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Cat, Breed
+from .models import Cat, Breed, DailyCatTop
+
 
 class BreedSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,3 +22,9 @@ class CatSerializer(serializers.ModelSerializer):
         if value < 1990:
             raise serializers.ValidationError("Укажите корректный год рождения.")
         return value
+class DailyTopSerializer(serializers.ModelSerializer):
+    cat_name = serializers.ReadOnlyField(source='cat.name')
+
+    class Meta:
+        model = DailyCatTop
+        fields = ['date', 'cat', 'cat_name', 'score']
