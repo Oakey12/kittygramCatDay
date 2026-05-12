@@ -28,7 +28,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'djoser',
     'drf_spectacular',
-
+    
     'cats.apps.CatsConfig',
 ]
 
