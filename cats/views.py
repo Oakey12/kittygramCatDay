@@ -73,3 +73,11 @@ class CatViewSet(viewsets.ModelViewSet):
         if not created:
             obj.score = votes_count
             obj.save()
+            
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def my_votes(self, request):
+        """Список котов, за которых голосовал текущий пользователь."""
+        votes = Vote.objects.filter(user=request.user).select_related('cat')
+        cats = [vote.cat for vote in votes]
+        serializer = self.get_serializer(cats, many=True)
+        return Response(serializer.data)
