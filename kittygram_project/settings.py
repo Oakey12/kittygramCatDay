@@ -100,9 +100,9 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     
-    # Добавьте эти строки для выполнения критерия пагинации:
+    
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 5,  # Показывает по 5 котов на страницу
+    'PAGE_SIZE': 5,  
 }
 
 SIMPLE_JWT = {
