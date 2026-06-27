@@ -30,19 +30,6 @@ class CatViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(cat)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
-    def vote(self, request, pk=None):
-        cat = self.get_object()
-        today = timezone.now().date()
-
-        if Vote.objects.filter(user=request.user, cat=cat, date=today).exists():
-            return Response({"detail": "Вы уже голосовали за этого кота сегодня."}, 
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        Vote.objects.create(user=request.user, cat=cat)
-        self.update_daily_score(cat.id)
-        return Response({"detail": "Голос учтен!"}, status=status.HTTP_201_CREATED)
-
     @action(detail=False, methods=['get'], url_path='weekly_top', permission_classes=[permissions.AllowAny])
     def weekly_top(self, request):
         last_week = timezone.now().date() - timedelta(days=7)
@@ -56,24 +43,20 @@ class CatViewSet(viewsets.ModelViewSet):
         cat = self.get_object()
         today = timezone.now().date()
 
+        # Правило 1: Запрет голосования за своего кота
         if cat.owner == request.user:
             return Response({"detail": "За своего кота голосовать нельзя!"}, 
                             status=status.HTTP_400_BAD_REQUEST)
+                            
+        # Правило 2: Запрет повторного голосования
+        if Vote.objects.filter(user=request.user, cat=cat, date=today).exists():
+            return Response({"detail": "Вы уже голосовали за этого кота сегодня."}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+
         Vote.objects.create(user=request.user, cat=cat)
         self.update_daily_score(cat.id)
         return Response({"detail": "Голос учтен!"}, status=status.HTTP_201_CREATED)
-
-    def update_daily_score(self, cat_id):
-        today = timezone.now().date()
-        votes_count = Vote.objects.filter(cat_id=cat_id, date=today).count()
-        obj, created = DailyCatTop.objects.get_or_create(
-            date=today,
-            defaults={'cat_id': cat_id, 'score': votes_count}
-        )
-        if not created:
-            obj.score = votes_count
-            obj.save()
-            
+    
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def my_votes(self, request):
         """Список котов, за которых голосовал текущий пользователь."""
@@ -81,3 +64,20 @@ class CatViewSet(viewsets.ModelViewSet):
         cats = [vote.cat for vote in votes]
         serializer = self.get_serializer(cats, many=True)
         return Response(serializer.data)
+    def update_daily_score(self, cat_id):
+        """Вспомогательный метод для обновления баллов в дневном топе."""
+        today = timezone.now().date()
+        try:
+            # Ищем, есть ли уже запись топа на сегодня
+            daily_top = DailyCatTop.objects.filter(date=today).first()
+            if daily_top:
+                # Если кот совпадает, плюсуем балл
+                if daily_top.cat_id == cat_id:
+                    daily_top.score += 1
+                    daily_top.save()
+            else:
+                # Если на сегодня топа еще нет, создаем
+                DailyCatTop.objects.create(date=today, cat_id=cat_id, score=1)
+        except Exception:
+            # Гасим возможные ошибки базы данных, чтобы голосование не падало
+            pass
